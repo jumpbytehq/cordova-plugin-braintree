@@ -51,12 +51,12 @@ BraintreePlugin.presentDropInPaymentUI = function showDropInUI(options, successC
         options.title = "";
     };
 
-    var pluginOptions = [
+   /* var pluginOptions = [
         cancelText,
         title
-    ];
+    ];*/
 
-    exec(successCallback, failureCallback, PLUGIN_ID, "presentDropInPaymentUI", pluginOptions);
+    exec(successCallback, failureCallback, PLUGIN_ID, "presentDropInPaymentUI", options);
 };
 
 module.exports = BraintreePlugin;
