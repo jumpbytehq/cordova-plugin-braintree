@@ -2,6 +2,7 @@ package net.justincredible;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -87,8 +88,14 @@ public final class BraintreePlugin extends CordovaPlugin {
             callbackContext.error("The Braintree client failed to initialize.");
             return;
         }
+        paymentRequest.actionBarTitle("EZER");
+        //paymentRequest.cancelButtonText(cancelText);//TODO
 
-        callbackContext.success();
+        this.cordova.setActivityResultCallback(this);
+        this.cordova.startActivityForResult(this, paymentRequest.getIntent(this.cordova.getActivity()), DROP_IN_REQUEST);
+
+        dropInUICallbackContext = callbackContext;
+//        callbackContext.success();
     }
 
     private synchronized void presentDropInPaymentUI(final JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -136,26 +143,31 @@ public final class BraintreePlugin extends CordovaPlugin {
         if (dropInUICallbackContext == null) {
             return;
         }
-
+        Log.i("EZER", "BrainTree Request Result: " + requestCode + " with result " + resultCode);
         if (requestCode == DROP_IN_REQUEST) {
-
+            Log.i("EZER", "BrainTree DROP_IN_REQUEST Result: " + requestCode + " with DROP_IN_REQUEST result " + resultCode);
             PaymentMethodNonce paymentMethodNonce = null;
 
             if (resultCode == Activity.RESULT_OK) {
                 paymentMethodNonce = intent.getParcelableExtra(BraintreePaymentActivity.EXTRA_PAYMENT_METHOD_NONCE);
+                Log.i("EZER","BrainTree DROP_IN_REQUEST paymentMethodNonce" + paymentMethodNonce.getNonce());
+
             }
 
             this.handleDropInPaymentUiResult(resultCode, paymentMethodNonce);
         }
         else if (requestCode == PAYMENT_BUTTON_REQUEST) {
             //TODO
+            Log.i("EZER", "BrainTree PAYMENT_BUTTON_REQUEST Result: " + requestCode + " with PAYMENT_BUTTON_REQUEST result " + resultCode);
             dropInUICallbackContext.error("Activity result handler for PAYMENT_BUTTON_REQUEST not implemented.");
         }
         else if (requestCode == CUSTOM_REQUEST) {
+            Log.i("EZER", "BrainTree CUSTOM_REQUEST Result: " + requestCode + " with CUSTOM_REQUEST result " + resultCode);
             dropInUICallbackContext.error("Activity result handler for CUSTOM_REQUEST not implemented.");
             //TODO
         }
         else if (requestCode == PAYPAL_REQUEST) {
+            Log.i("EZER", "BrainTree PAYPAL_REQUEST Result: " + requestCode + " with PAYPAL_REQUEST result " + resultCode);
             dropInUICallbackContext.error("Activity result handler for PAYPAL_REQUEST not implemented.");
             //TODO
         }
@@ -172,8 +184,9 @@ public final class BraintreePlugin extends CordovaPlugin {
         if (dropInUICallbackContext == null) {
             return;
         }
-
+        Log.i("EZER", "handleDropInPaymentUiResult Result: " + resultCode);
         if (resultCode == Activity.RESULT_CANCELED) {
+            Log.i("EZER", "handleDropInPaymentUiResult RESULT_CANCELED Result: " + resultCode);
             Map<String, Object> resultMap = new HashMap<String, Object>();
             resultMap.put("userCancelled", true);
             dropInUICallbackContext.success(new JSONObject(resultMap));
