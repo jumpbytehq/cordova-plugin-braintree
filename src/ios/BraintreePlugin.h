@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 #import <Cordova/CDV.h>
-#import "MBProgressHUD.h"
+//#import "MBProgressHUD.h"
 
 @interface BraintreePlugin : CDVPlugin
 - (void)initialize:(CDVInvokedUrlCommand *)command;
