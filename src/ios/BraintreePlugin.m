@@ -52,9 +52,39 @@ NSString *dropInUIcallbackId;
         [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
         return;
     }
+    // Obtain the arguments.
+    
+    NSString* cancelText = @"Cancel";//[command.arguments objectAtIndex:0];
+    NSString* title = @"EZER";//[command.arguments objectAtIndex:1];
+    
+    //CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    //[self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
+    // Save off the Cordova callback ID so it can be used in the completion handlers.
+    dropInUIcallbackId = command.callbackId;
+    
+    // Create a BTDropInViewController
+    BTDropInViewController *dropInViewController = [[BTDropInViewController alloc]
+                                                    initWithAPIClient:self.braintreeClient];
+    dropInViewController.delegate = self;
+    
+    // Setup the cancel button.
+    
+    UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc]
+                                     initWithTitle:cancelText
+                                     style:UIBarButtonItemStylePlain
+                                     target:self
+                                     action:@selector(userDidCancelPayment)];
+    
+    dropInViewController.navigationItem.leftBarButtonItem = cancelButton;
+    
+    // Setup the dialog's title.
+    dropInViewController.title = title;
+    
+    UINavigationController *navigationController = [[UINavigationController alloc]
+                                                    initWithRootViewController:dropInViewController];
+    
+    [self.viewController presentViewController:navigationController animated:YES completion:nil];
 
-    CDVPluginResult *res = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-    [self.commandDelegate sendPluginResult:res callbackId:command.callbackId];
 }
 
 - (void)presentDropInPaymentUI:(CDVInvokedUrlCommand *)command {
@@ -123,7 +153,7 @@ NSString *dropInUIcallbackId;
 - (void)userDidCancelPayment {
 
     [self.viewController dismissViewControllerAnimated:YES completion:nil];
-
+    NSLog(@"dropInViewController userDidCancelPayment fired" );
     if (dropInUIcallbackId) {
 
         NSDictionary *dictionary = @{ @"userCancelled": @YES };
@@ -140,12 +170,13 @@ NSString *dropInUIcallbackId;
 
 - (void)dropInViewController:(BTDropInViewController *)viewController
   didSucceedWithTokenization:(BTPaymentMethodNonce *)paymentMethodNonce {
-
     [self.viewController dismissViewControllerAnimated:YES completion:nil];
-
+    
+    NSLog(@"dropInViewController didSucceedWithTokenization fired" );
+    
     if (dropInUIcallbackId) {
-
         NSDictionary *dictionary = [self getPaymentUINonceResult:paymentMethodNonce];
+        NSLog(@"dropInViewController didSucceedWithTokenization paymentMethodNonce%@", dictionary);
 
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                                       messageAsDictionary:dictionary];
@@ -158,6 +189,7 @@ NSString *dropInUIcallbackId;
 - (void)dropInViewControllerDidCancel:(__unused BTDropInViewController *)viewController {
 
     [self.viewController dismissViewControllerAnimated:YES completion:nil];
+    NSLog(@"dropInViewController dropInViewControllerDidCancel fired" );
 
     if (dropInUIcallbackId) {
 
@@ -178,33 +210,38 @@ NSString *dropInUIcallbackId;
  * Handles several different types of nonces (eg for cards, Apple Pay, PayPal, etc).
  */
 - (NSDictionary*)getPaymentUINonceResult:(BTPaymentMethodNonce *)paymentMethodNonce {
-
     BTCardNonce *cardNonce;
     BTPayPalAccountNonce *payPalAccountNonce;
     BTApplePayCardNonce *applePayCardNonce;
     BTThreeDSecureCardNonce *threeDSecureCardNonce;
     BTVenmoAccountNonce *venmoAccountNonce;
-
+    
     if ([paymentMethodNonce isKindOfClass:[BTCardNonce class]]) {
+        NSLog(@"dropInViewController cardNonce fired");
+
         cardNonce = (BTCardNonce*)paymentMethodNonce;
     }
 
     if ([paymentMethodNonce isKindOfClass:[BTPayPalAccountNonce class]]) {
+        NSLog(@"dropInViewController payPalAccountNonce fired");
         payPalAccountNonce = (BTPayPalAccountNonce*)paymentMethodNonce;
     }
 
     if ([paymentMethodNonce isKindOfClass:[BTApplePayCardNonce class]]) {
+        NSLog(@"dropInViewController applePayCardNonce fired");
         applePayCardNonce = (BTApplePayCardNonce*)paymentMethodNonce;
     }
 
     if ([paymentMethodNonce isKindOfClass:[BTThreeDSecureCardNonce class]]) {
+        NSLog(@"dropInViewController threeDSecureCardNonce fired");
         threeDSecureCardNonce = (BTThreeDSecureCardNonce*)paymentMethodNonce;
     }
 
     if ([paymentMethodNonce isKindOfClass:[BTVenmoAccountNonce class]]) {
+        NSLog(@"dropInViewController venmoAccountNonce fired");
         venmoAccountNonce = (BTVenmoAccountNonce*)paymentMethodNonce;
     }
-
+    
     NSDictionary *dictionary = @{ @"userCancelled": @NO,
 
                                   // Standard Fields
@@ -223,11 +260,11 @@ NSString *dropInUIcallbackId;
                                           @"email": payPalAccountNonce.email,
                                           @"firstName": payPalAccountNonce.firstName,
                                           @"lastName": payPalAccountNonce.lastName,
-                                          @"phone": payPalAccountNonce.phone,
+                                          @"phone": !payPalAccountNonce.phone ? [NSNull null] : payPalAccountNonce.phone,
                                           //@"billingAddress" //TODO
                                           //@"shippingAddress" //TODO
-                                          @"clientMetadataId": payPalAccountNonce.clientMetadataId,
-                                          @"payerId": payPalAccountNonce.payerId
+                                          @"clientMetadataId": !payPalAccountNonce.clientMetadataId ? [NSNull null] : payPalAccountNonce.clientMetadataId,
+                                          @"payerId": !payPalAccountNonce.payerId ? [NSNull null] : payPalAccountNonce.payerId
                                           },
 
                                   // BTApplePayCardNonce
